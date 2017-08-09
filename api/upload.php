@@ -1,4 +1,5 @@
 <?php
+	//non functional
 	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 		returnResult("Only POST method allowed", 405);
 	}
