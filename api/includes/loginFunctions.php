@@ -1,15 +1,4 @@
-<?php	
-	class user {
-		public $id;
-		public $createdOn;
-		public $lastAccessedOn;
-		public $email;
-		public $password;
-		public $isDisabled;
-		public $isLocked;
-		public $loginTries;
-	}
-
+<?php
 	function getClientIdByToken($token, $databaseConnection) {
 		$query = $databaseConnection->prepare("SELECT id FROM clients WHERE token = ?");
 		$query->bind_param("s", $token);
@@ -27,13 +16,12 @@
 	}
 
 	function getUserByEmail($email, $databaseConnection) {
-		$user = new user;
-		$query = $databaseConnection->prepare("SELECT id, password, isDisabled, isLocked FROM users WHERE email = ?");
+		$query = $databaseConnection->prepare("SELECT id, password, isDisabled FROM users WHERE email = ?");
 		$query->bind_param("s", $email);
 		$query->execute();
 		$query->store_result();
 		if($query->num_rows === 1) {
-			$query->bind_result($user->id, $user->password, $user->isDisabled, $user->isLocked);
+			$query->bind_result($user->id, $user->password, $user->isDisabled);
 			$query->fetch();
 		}
 		else {
@@ -59,7 +47,7 @@
 	}
 
 	function processWrongPassword($user, $databaseConnection){
-		$query = $databaseConnection->prepare("UPDATE users SET loginTries = loginTries + 1, isLocked = CASE WHEN loginTries >= 3 THEN TRUE ELSE FALSE END WHERE id = ?");
+		$query = $databaseConnection->prepare("UPDATE users SET loginTries = loginTries + 1, isDisabled = CASE WHEN loginTries >= 3 THEN TRUE ELSE FALSE END WHERE id = ?");
 		$query->bind_param("s", $user->id);
 		$query->execute();
 		$query->close();

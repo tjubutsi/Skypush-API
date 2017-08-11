@@ -15,9 +15,9 @@
 		return $session;
 	}
 	
-	function getAccessToken($session) {
+	function getAccessToken($session, $databaseConnection) {
 		$accessToken = bin2hex(random_bytes(16));
-		$query = $databaseConnection->prepare("UPDATE lastAccessedOn = CURRENT_TIMESTAMP WHERE id = ?");
+		$query = $databaseConnection->prepare("UPDATE users SET lastAccessedOn = CURRENT_TIMESTAMP WHERE id = ?");
 		$query->bind_param("i", $session->user);
 		$query->execute();
 		$query = $databaseConnection->prepare("UPDATE clients SET lastAccessedOn = CURRENT_TIMESTAMP WHERE id = ?");

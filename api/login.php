@@ -1,6 +1,6 @@
 <?php
-	include "helpers.php";
-	include "loginFunctions.php";
+	include "includes/helpers.php";
+	include "includes/loginFunctions.php";
 	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 		//writeLogEntry("GKUHFRE", logLevel::$notification, $databaseConnection);
 		returnResult("Only POST method allowed", 405);
@@ -29,6 +29,6 @@
 		returnResult("Wrong password", 401);
 	}
 	
-	$combinedIp = $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_X_FORWARDED_FOR'];
+	$combinedIp = $_SERVER['REMOTE_ADDR'];
 	$accessToken = processLoginSuccess($user, $clientId, password_hash($combinedIp, PASSWORD_DEFAULT), $databaseConnection);
 	returnResult($accessToken);

@@ -1,6 +1,6 @@
 <?php
-	include "helpers.php";
-	include "loginFunctions.php";
+	include "includes/helpers.php";
+	include "includes/authFunctions.php";
 	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 		returnResult("Only POST method allowed", 405);
 	}
@@ -15,10 +15,10 @@
 		returnResult("Token is disabled", 403);
 	}
 	
-	$combinedIp = $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_X_FORWARDED_FOR'];
+	$combinedIp = $_SERVER['REMOTE_ADDR'];
 	if (!password_verify($combinedIp, $session->ipHash)) {
 		returnResult("Token invalid", 403);
 	}
 	
-	$accessToken = getAccessToken($session);
+	$accessToken = getAccessToken($session, $databaseConnection);
 	returnResult($accessToken);
