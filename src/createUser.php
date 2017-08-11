@@ -1,6 +1,6 @@
 <?php
-	include "includes/helpers.php";
-	include "includes/createUserFunctions.php";
+	require_once(dirname(__FILE__) . "/includes/helpers.php");
+	
 	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 		returnResult("Only POST method allowed", 405);
 	}
@@ -17,9 +17,13 @@
 	if ($_POST["password"] !== $_POST["passwordVerify"]) {
 		returnResult("Passwords do not match", 400);
 	}
-	if($user = getUserByEmail($_POST["email"], $databaseConnection)) {
+	if($user = $db->users->where("email", $_POST["email"])) {
 		returnResult("User already exists", 400);
 	}
 	
-	createUser($_POST["email"], password_hash($_POST["password"], PASSWORD_DEFAULT), $databaseConnection);
+	$user = new user();
+	$user->email = $_POST["email"];
+	$user->password = password_hash($_POST["password"], PASSWORD_DEFAULT);
+	$db->users->add($user);
+
 	returnResult("User created");

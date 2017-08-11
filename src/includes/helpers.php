@@ -1,9 +1,6 @@
 <?php
-	$databaseServer = "127.0.0.1";
-	$database = "skypushdev";
-	$databaseUser = "skypush";
-	$databasePassword = "skypush";
-	$databaseConnection = new mysqli($databaseServer, $databaseUser, $databasePassword, $database);
+	require_once(dirname(__FILE__) . "/../lib/SkyCRUD/src/db.php");
+	$db = new db();
 	
 	function returnResult($message, $code = 200) {
 		$data = new stdClass();

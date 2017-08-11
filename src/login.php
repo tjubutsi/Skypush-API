@@ -1,6 +1,6 @@
 <?php
-	include "includes/helpers.php";
-	include "includes/loginFunctions.php";
+	require_once(dirname(__FILE__) . "/includes/helpers.php");
+	
 	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 		//writeLogEntry("GKUHFRE", logLevel::$notification, $databaseConnection);
 		returnResult("Only POST method allowed", 405);
@@ -9,7 +9,7 @@
 	if (!isset($_SERVER["HTTP_TOKEN"])) {
 		returnResult("Token missing", 400);
 	}
-	if (!$clientId = getClientIdByToken($_SERVER["HTTP_TOKEN"], $databaseConnection)){
+	if (!$client = $db->clients->where("token", $_SERVER["HTTP_TOKEN"])) {
 		returnResult("Token invalid", 400);
 	}
 	if (!isset($_SERVER["PHP_AUTH_USER"])) {
@@ -18,17 +18,33 @@
 	if (!isset($_SERVER["PHP_AUTH_PW"])) {
 		returnResult("Password missing", 400);
 	}
-	if(!$user = getUserByEmail($_SERVER["PHP_AUTH_USER"], $databaseConnection)){
+	if (!$user = $db->users->where("email", $_SERVER["PHP_AUTH_USER"])) {
 		returnResult("User does not exist", 400);
 	}
 	if ($user->isDisabled) {
 		returnResult("User is disabled", 401);
 	}
 	if(!password_verify($_SERVER["PHP_AUTH_PW"], $user->password)){
-		processWrongPassword($user, $databaseConnection);
+		$user->loginTries = $user->loginTries + 1;
+		if ($user->loginTries >= 3) {
+			$user->isDisabled = 1;
+		}
+		$db->users->update($user);
 		returnResult("Wrong password", 401);
 	}
 	
-	$combinedIp = $_SERVER['REMOTE_ADDR'];
-	$accessToken = processLoginSuccess($user, $clientId, password_hash($combinedIp, PASSWORD_DEFAULT), $databaseConnection);
-	returnResult($accessToken);
+	$user->loginTries = 0;
+	$user->lastAccessedOn = date("Y-m-d H:i:s");
+	$db->users->update($user);
+	
+	$client->lastAccessedOn = date("Y-m-d H:i:s");
+	$db->clients->update($client);
+	
+	$session = new session();
+	$session->token = bin2hex(random_bytes(16));
+	$session->user = $user->id;
+	$session->client = $client->id;
+	$session->ipHash = password_hash($_SERVER['REMOTE_ADDR'], PASSWORD_DEFAULT);
+	
+	$db->sessions->add($session);
+	returnResult($session->token);
