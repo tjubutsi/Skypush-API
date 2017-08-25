@@ -8,11 +8,17 @@
 	if (!isset($_POST["email"])) {
 		returnResult("Email missing", 400);
 	}
+	if (!filter_var($_POST["email"], FILTER_VALIDATE_EMAIL)) {
+		returnResult("Email is invalid", 400);
+	}
 	if (!isset($_POST["password"])) {
 		returnResult("Password missing", 400);
 	}
 	if (!isset($_POST["passwordVerify"])) {
 		returnResult("Password verification missing", 400);
+	}
+	if (strlen($_POST["password"]) < 8) {
+		returnResult("Password needs to be 8 characters or longer", 400);
 	}
 	if ($_POST["password"] !== $_POST["passwordVerify"]) {
 		returnResult("Passwords do not match", 400);
