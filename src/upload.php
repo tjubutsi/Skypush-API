@@ -1,15 +1,27 @@
 <?php
-	//non functional
+	require_once(dirname(__FILE__) . "/includes/helpers.php");
+	
 	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 		returnResult("Only POST method allowed", 405);
 	}
-	$token = getallheaders()["token"];
-	if (strlen($token) == 0) {
-		returnResult("Upload failed, invalid token", 401);
+		
+	$anonymous = true;
+	
+	if (isset($_SERVER["HTTP_TOKEN"])) {
+		$anonymous = false;
+		if (!$accessToken = $db->accessTokens->where("token", $_SERVER["HTTP_TOKEN"])) {
+			returnResult("Token invalid", 400);
+		}
+		if ($accessToken->isDisabled){
+			returnResult("Token is disabled", 403);
+		}
+		if ($accessToken->validUntill < date("Y-m-d H:i:s")){
+			returnResult("Token is expired", 403);
+		}
 	}
+	
 	$uploadDirectory = "i/";
 	$thumbnailDirectory = $uploadDirectory . "t/";
-	error_log(print_r($_FILES["data"]["error"], true));
 	chdir($_SERVER["DOCUMENT_ROOT"]);
 	$id = base_convert(microtime(true) * 10000, 10, 36);
 	$file = $uploadDirectory . $id . ".png";
@@ -22,70 +34,39 @@
 		returnResult("Upload failed", 500);
 	}
 	
-	$mysqli = new mysqli('127.0.0.1', 'skypush', 'skypush', 'skypush');
-	
-	if ($mysqli->connect_errno) {
-		return false;
+	$upload = new upload();
+	$upload->file = $file;
+	if (!$anonymous)
+	{
+		$upload->accessToken = $accessToken->id;
 	}
 	
-	$sql = "INSERT INTO uploads (token, file) VALUES('$token', '$file');";
-	if ($mysqli->query($sql) === true) {
-		returnResult("https://skyweb.nu/$file");
-	}
-	else {
-		returnResult("upload failed", 500);
-		die();
-	}
-	$result->free();
-	$mysqli->close();
+	$privateUpload = false;
 	
-	function insertTokenAndFile($token, $file){
-		$mysqli = new mysqli('127.0.0.1', 'skypush', 'skypush', 'skypush');
+	if (isset($_POST["privateUpload"])) {
+		$privateUpload = $_POST["privateUpload"];
+	}
+	
+	$upload->isPrivate = $privateUpload;
+	$db->uploads->add($upload);
+	
+	if (!$anonymous)
+	{
+		$accessToken->lastAccessedOn = date("Y-m-d H:i:s");
+		$accessToken->validUntill = date("Y-m-d H:i:s", strtotime('+1 hours'));
+		$db->accessTokens->update($accessToken);
 		
-		if ($mysqli->connect_errno) {
-			return false;
-		}
+		$session = $db->sessions->get($accessToken->session);
+		$session->lastAccessedOn = date("Y-m-d H:i:s");
+		$db->sessions->update($session);
 		
-		$sql = "INSERT INTO uploads (token, file) VALUES($token, $file);";
-		if ($mysqli->query($sql) === true) {
-			return true;
-		}
-		else {
-			$a = "Query: " . $sql . "\n";
-			$a += "Errno: " . $mysqli->errno . "\n";
-			$a += "Error: " . $mysqli->error . "\n";
-			returnResult($a, 500);
-			die();
-		}
-		$result->free();
-		$mysqli->close();
+		$user = $db->users->get($session->user);
+		$user->lastAccessedOn = date("Y-m-d H:i:s");
+		$db->users->update($user);
+	
+		$client = $db->clients->get($session->client);
+		$client->lastAccessedOn = date("Y-m-d H:i:s");
+		$db->clients->update($client);
 	}
-
-	function createThumbnail($filepath, $thumbpath, $thumbnail_width, $thumbnail_height, $background=false) {
-		list($original_width, $original_height, $original_type) = getimagesize($filepath);
-		if ($original_width > $original_height) {
-			$new_width = $thumbnail_width;
-			$new_height = intval($original_height * $new_width / $original_width);
-		} else {
-			$new_height = $thumbnail_height;
-			$new_width = intval($original_width * $new_height / $original_height);
-		}
-		$dest_x = intval(($thumbnail_width - $new_width) / 2);
-		$dest_y = intval(($thumbnail_height - $new_height) / 2);
-		$old_image = ImageCreateFromPNG($filepath);
-		$new_image = imagecreatetruecolor($thumbnail_width, $thumbnail_height);
-		imagesavealpha($new_image, TRUE);
-		$color = imagecolorallocatealpha($new_image, 0, 0, 0, 127);
-		imagefill($new_image, 0, 0, $color);
-		imagecopyresampled($new_image, $old_image, $dest_x, $dest_y, 0, 0, $new_width, $new_height, $original_width, $original_height);
-		ImagePNG($new_image, $thumbpath);
-		return file_exists($thumbpath);
-	}
-
-	function returnResult($message, $code = 200) {
-		$data = new stdClass();
-		$data->message = $message;
-		http_response_code($code);
-		echo json_encode($data);
-		die();
-	}
+	
+	returnResult("https://skyweb.nu/$file");
