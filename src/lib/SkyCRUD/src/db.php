@@ -11,7 +11,7 @@
 		
 		function __construct() {
 			$databaseServer = "127.0.0.1";
-			$database = "skypushdev";
+			$database = "skypush";
 			$databaseUser = "skypush";
 			$databasePassword = "skypush";
 			$this->connection = new mysqli($databaseServer, $databaseUser, $databasePassword, $database);
