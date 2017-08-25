@@ -10,10 +10,11 @@
 		public $users;
 		
 		function __construct() {
-			$databaseServer = "127.0.0.1";
-			$database = "skypush";
-			$databaseUser = "skypush";
-			$databasePassword = "skypush";
+			require_once(dirname(__FILE__) . "/config.php");
+			$databaseServer = $config["server"];
+			$database = $config["databaseName"];
+			$databaseUser = $config["username"];
+			$databasePassword = $config["password"];
 			$this->connection = new mysqli($databaseServer, $databaseUser, $databasePassword, $database);
 			$this->accessTokens = new entity("accessTokens", "accessToken", $this->connection);
 			$this->clients = new entity("clients", "client", $this->connection);
