@@ -13,10 +13,10 @@
 			returnResult("Token invalid", 400);
 		}
 		if ($accessToken->isDisabled){
-			returnResult("Token is disabled", 403);
+			returnResult("Token is disabled", 401);
 		}
 		if ($accessToken->validUntill < date("Y-m-d H:i:s")){
-			returnResult("Token is expired", 403);
+			returnResult("Token is expired", 401);
 		}
 	}
 	
