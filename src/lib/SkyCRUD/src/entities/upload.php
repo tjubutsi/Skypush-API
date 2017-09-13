@@ -1,6 +1,7 @@
 <?php
 	class upload {
 		public $id;
+		public $file;
 		public $accessToken;
 		public $isPrivate;
 		public $createdOn;

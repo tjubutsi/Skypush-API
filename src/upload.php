@@ -35,7 +35,7 @@
 	}
 	
 	$upload = new upload();
-	$upload->file = $file;
+	$upload->file = $id . ".png";
 	if (!$anonymous)
 	{
 		$upload->accessToken = $accessToken->id;
