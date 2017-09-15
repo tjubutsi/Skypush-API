@@ -1,5 +1,5 @@
 <?php
-	require_once(dirname(__FILE__) . "/entity.php");
+	require_once("entity.php");
 
 	class db {
 		public $connection;
@@ -10,7 +10,7 @@
 		public $users;
 		
 		function __construct() {
-			require_once(dirname(__FILE__) . "/config.php");
+			require_once("config.php");
 			$databaseServer = $config["server"];
 			$database = $config["databaseName"];
 			$databaseUser = $config["username"];

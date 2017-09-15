@@ -1,50 +1,53 @@
 <?php
-	require_once(dirname(__FILE__) . "/includes/helpers.php");
+	if ($_SERVER["REQUEST_METHOD"] === "POST") {
+		require_once($_SERVER["DOCUMENT_ROOT"] . "/includes/helpers.php");
 	
-	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-		//writeLogEntry("GKUHFRE", logLevel::$notification, $databaseConnection);
-		returnResult("Only POST method allowed", 405);
-	}
-	
-	if (!isset($_SERVER["HTTP_TOKEN"])) {
-		returnResult("Token missing", 400);
-	}
-	if (!$client = $db->clients->where("token", $_SERVER["HTTP_TOKEN"])) {
-		returnResult("Token invalid", 400);
-	}
-	if (!isset($_SERVER["PHP_AUTH_USER"])) {
-		returnResult("User missing", 400);
-	}
-	if (!isset($_SERVER["PHP_AUTH_PW"])) {
-		returnResult("Password missing", 400);
-	}
-	if (!$user = $db->users->where("email", $_SERVER["PHP_AUTH_USER"])) {
-		returnResult("User does not exist", 400);
-	}
-	if ($user->isDisabled) {
-		returnResult("User is disabled", 401);
-	}
-	if(!password_verify($_SERVER["PHP_AUTH_PW"], $user->password)){
-		$user->loginTries = $user->loginTries + 1;
-		if ($user->loginTries >= 3) {
-			$user->isDisabled = 1;
+		if (!$user = $db->users->where("email", $_POST['email'])) {
+			returnPage("User does not exist", 400);
 		}
+		if ($user->isDisabled) {
+			returnPage("User is disabled", 401);
+		}
+		if(!password_verify($_POST['password'], $user->password)){
+			$user->loginTries = $user->loginTries + 1;
+			if ($user->loginTries >= 3) {
+				$user->isDisabled = 1;
+			}
+			$db->users->update($user);
+			returnPage("Wrong password", 401);
+		}
+	
+		$user->loginTries = 0;
+		$user->lastAccessedOn = date("Y-m-d H:i:s");
 		$db->users->update($user);
-		returnResult("Wrong password", 401);
+		session_start();
+		$_SESSION['userEmail'] = $user->email;
+		$_SESSION['userId'] = $user->id;
+		header('Location: /');
 	}
-	
-	$user->loginTries = 0;
-	$user->lastAccessedOn = date("Y-m-d H:i:s");
-	$db->users->update($user);
-	
-	$client->lastAccessedOn = date("Y-m-d H:i:s");
-	$db->clients->update($client);
-	
-	$session = new session();
-	$session->token = bin2hex(random_bytes(16));
-	$session->user = $user->id;
-	$session->client = $client->id;
-	$session->ipHash = password_hash($_SERVER['REMOTE_ADDR'], PASSWORD_DEFAULT);
-	
-	$db->sessions->add($session);
-	returnResult($session->token);
+	else {
+?>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Login Form</title>
+</head>
+<body>
+  <section class="container">
+    <div class="login">
+      <h1>Login</h1>
+      <form method="post" action="login.php">
+        <p><input type="text" name="email" value="" placeholder="email"></p>
+        <p><input type="password" name="password" value="" placeholder="Password"></p>
+
+        <p class="submit"><input type="submit" name="commit" value="Login"></p>
+      </form>
+    </div>
+</body>
+</html>
+
+<?php 
+	} 
+?>
