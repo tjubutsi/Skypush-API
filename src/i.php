@@ -22,6 +22,3 @@
 	header("Content-Type: image/png");
 	readfile("images/" . $image->file);
 ?>
-
-
-select s.user from accessTokens as a join sessions as s on s.id = a.session where a.id = 1
