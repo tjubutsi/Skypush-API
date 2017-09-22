@@ -21,4 +21,3 @@
 	}
 	header("Content-Type: image/png");
 	readfile("images/" . $image->file);
-?>
