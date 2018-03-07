@@ -12,5 +12,6 @@
 			$this->loginTries = 0;
 			$this->isDisabled = 0;
 			$this->createdOn = date("Y-m-d H:i:s");
+			$this->lastAccessedOn = date("Y-m-d H:i:s");
 		}
 	}

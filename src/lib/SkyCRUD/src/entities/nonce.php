@@ -1,14 +1,11 @@
 <?php
-	class upload {
+	class nonce {
 		public $id;
-		public $file;
-		public $session;
-		public $isPrivate;
+		public $nonce;
 		public $createdOn;
 		public $lastAccessedOn;
 		
 		function __construct() {
-			$this->isPrivate = 0;
 			$this->createdOn = date("Y-m-d H:i:s");
 			$this->lastAccessedOn = date("Y-m-d H:i:s");
 		}

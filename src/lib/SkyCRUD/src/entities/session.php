@@ -3,7 +3,7 @@
 		public $id;
 		public $token;
 		public $user;
-		public $client;
+		public $clientHash;
 		public $ipHash;
 		public $isDisabled;
 		public $createdOn;
@@ -12,5 +12,6 @@
 		function __construct() {
 			$this->isDisabled = 0;
 			$this->createdOn = date("Y-m-d H:i:s");
+			$this->lastAccessedOn = date("Y-m-d H:i:s");
 		}
 	}

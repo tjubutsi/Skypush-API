@@ -2,15 +2,7 @@
 	require_once($_SERVER["DOCUMENT_ROOT"] . "/includes/helpers.php");
 	
 	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-		//writeLogEntry("GKUHFRE", logLevel::$notification, $databaseConnection);
 		returnJson("Only POST method allowed", 405);
-	}
-	
-	if (!isset($_SERVER["HTTP_TOKEN"])) {
-		returnJson("Token missing", 400);
-	}
-	if (!$client = $db->clients->where("token", $_SERVER["HTTP_TOKEN"])) {
-		returnJson("Token invalid", 400);
 	}
 	if (!isset($_SERVER["PHP_AUTH_USER"])) {
 		returnJson("User missing", 400);
@@ -37,14 +29,20 @@
 	$user->lastAccessedOn = date("Y-m-d H:i:s");
 	$db->users->update($user);
 	
-	$client->lastAccessedOn = date("Y-m-d H:i:s");
-	$db->clients->update($client);
-	
 	$session = new session();
-	$session->token = bin2hex(random_bytes(16));
+	$session->token = createToken();
 	$session->user = $user->id;
-	$session->client = $client->id;
+	$session->clientHash = password_hash($_SERVER["HTTP_USER_AGENT"], PASSWORD_DEFAULT);
 	$session->ipHash = password_hash($_SERVER["REMOTE_ADDR"], PASSWORD_DEFAULT);
 	
 	$db->sessions->add($session);
 	returnJson($session->token);
+	
+	function createToken() {
+		$token = bin2hex(random_bytes(32));
+		if ($db->sessions->where("token", $token)) {
+			$token = createToken();
+		}
+		
+		return $token;
+	}
