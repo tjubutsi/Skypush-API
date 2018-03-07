@@ -25,5 +25,5 @@
 	}
 	
 	function verifyHMAC($HMAC, $URI, $method, $user, $message, $timestamp, $nonce, $secret) {
-		return hash_equals($HMAC, hash_hmac("sha-512", $URI . $method . $user . $message . $timestamp . $nonce), $secret)
+		return hash_equals($HMAC, hash_hmac("sha-512", $URI . $method . $user . $message . $timestamp . $nonce), $secret);
 	}
