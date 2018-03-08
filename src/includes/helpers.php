@@ -36,13 +36,13 @@
 		global $db;
 		$authorization = new authorization($_SERVER["HTTP_AUTHORIZATION"]);
 		$message = file_get_contents('php://input');
-		if (!$APIKey = $db->APIKeys->where("key", $authorization->key)) {
+		if (!$APIKey = $db->APIKeys->where("APIKey", $authorization->APIKey)) {
 			returnError("API key does not exist");
 		}
 		if ($APIKey->isDisabled) {
 			returnError("API key is disabled", 403);
 		}
-		if (!hash_equals($HMAC, createHMAC($message, $authorization->key, $APIKey->secret))) {
+		if (!hash_equals($authorization->HMAC, createHMAC($message, $authorization->APIKey, $APIKey->secret))) {
 			$APIKey->isDisabled = 1;
 			$db->APIKeys->update($APIKey);
 			returnError("HMAC signature validation failed, disabling API key", 403);
@@ -76,5 +76,5 @@
 	function createHMAC($message, $key, $secret) {
 		$url = $_SERVER["REQUEST_SCHEME"] . "://" . $_SERVER["HTTP_HOST"]. $_SERVER["REQUEST_URI"];
 		$message = $_SERVER["REQUEST_METHOD"] . $url . $message . $key;
-		return hash_hmac("sha-512", $message, $secret);
+		return hash_hmac("sha512", $message, $secret);
 	}

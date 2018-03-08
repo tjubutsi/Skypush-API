@@ -1,16 +1,16 @@
 <?php
 	class authorization {
 		public $type;
-		public $key;
-		public $hash;
+		public $APIKey;
+		public $HMAC;
 		
 		function __construct($authorizationString) {
-			if (!preg_match("/^([a-z]{4,4}) ([^:]{1,}):(.{1,})$/", $authorizationString, $authorizationArray)) {
+			if (!preg_match("/^([a-z]{4}) ([^:]+):(.+)$/", $authorizationString, $authorizationArray)) {
 				returnError("Invalid Authorization header");
 			}
-			$this->type = $authorizationArray[1][0];
-			$this->key = $authorizationArray[2][0];
-			$this->hash = $authorizationArray[3][0];
+			$this->type = $authorizationArray[1];
+			$this->APIKey = $authorizationArray[2];
+			$this->HMAC = $authorizationArray[3];
 		}
 	}
 
