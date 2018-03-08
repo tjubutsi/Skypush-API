@@ -24,6 +24,19 @@
 		return $token;
 	}
 	
-	function verifyHMAC($HMAC, $URI, $method, $user, $message, $timestamp, $nonce, $secret) {
-		return hash_equals($HMAC, hash_hmac("sha-512", $URI . $method . $user . $message . $timestamp . $nonce), $secret);
+	function verifyHMAC($HMAC, $message, $user, $timestamp, $nonce, $secret) {
+		$hmacPieces = explode(":", $_SERVER["HTTP_AUTHORIZATION"]);
+		$hmac = $hmacPieces[1];
+		$message = file_get_contents('php://input');
+		$user = $hmacPieces[0];
+		$timestamp = $_SERVER["HTTP_TIMESTAMP"];
+		$nonce = $_SERVER["HTTP_NONCE"];
+		
+		return hash_equals($HMAC, createHMAC($message, $user, $timestamp, $nonce, $secret));
+	}
+	
+	function createHMAC($message, $user, $timestamp, $nonce, $secret) {
+		$url = $_SERVER["REQUEST_SCHEME"] . "://" . $_SERVER["HTTP_HOST"]. $_SERVER["REQUEST_URI"];
+		$secureMessage = $_SERVER["REQUEST_METHOD"] . $url . $message . $user . $timestamp . $nonce;
+		return hash_hmac("sha-512", $secureMessage, $secret);
 	}
