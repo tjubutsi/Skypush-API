@@ -1,6 +1,6 @@
 <?php
-	require_once($_SERVER["DOCUMENT_ROOT"] . "/lib/SkyCRUD/src/db.php");
-	require_once($_SERVER["DOCUMENT_ROOT"] . "/includes/models.php");
+	require_once(dirname(__FILE__) . "/../lib/SkyCRUD/src/db.php");
+	require_once(dirname(__FILE__) . "/models.php");
 	
 	$db = new db();
 	
@@ -33,6 +33,7 @@
 	}
 	
 	function verifyAuthorization($userRequired = false) {
+		global $db;
 		$authorization = new authorization($_SERVER["HTTP_AUTHORIZATION"]);
 		$message = file_get_contents('php://input');
 		if (!$APIKey = $db->APIKeys->where("key", $authorization->key)) {
