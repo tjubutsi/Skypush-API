@@ -1,42 +1,79 @@
 <?php
 	require_once($_SERVER["DOCUMENT_ROOT"] . "/lib/SkyCRUD/src/db.php");
+	require_once($_SERVER["DOCUMENT_ROOT"] . "/includes/models.php");
+	
 	$db = new db();
 	
-	function returnJson($message, $code = 200) {
-		$data = new stdClass();
-		$data->message = $message;
+	function returnData($object, $code = 200) {
 		http_response_code($code);
-		echo json_encode($data);
+		echo json_encode($object);
 		die();
 	}
 	
-	function returnPage($message, $code = 200) {
+	function returnError($message, $code = 400) {
+		returnData(new errorMessage($message), $code);
+	}
+	
+	function returnDataWithHMAC($object, $code = 200) {
 		http_response_code($code);
-		echo $message;
+		echo json_encode($object);
 		die();
+	}
+	
+	function returnErrorWithHMAC($message, $code = 400) {
+		returnDataWithHMAC(new errorMessage($message), $code);
+	}
+	
+	function returnSuccess($success = true, $code = 200) {
+		returnData(new successMessage($success), $code);
 	}
 	
 	function createToken() {
-		$token = bin2hex(random_bytes(32));
-		while ($db->sessions->where("token", $token)) {
-			$token = bin2hex(random_bytes(32));
-		}
-		return $token;
+		return bin2hex(random_bytes(32));
 	}
 	
-	function verifyHMAC($HMAC, $message, $user, $timestamp, $nonce, $secret) {
-		$hmacPieces = explode(":", $_SERVER["HTTP_AUTHORIZATION"]);
-		$hmac = $hmacPieces[1];
+	function verifyAuthorization($userRequired = false) {
+		$authorization = new authorization($_SERVER["HTTP_AUTHORIZATION"]);
 		$message = file_get_contents('php://input');
-		$user = $hmacPieces[0];
-		$timestamp = $_SERVER["HTTP_TIMESTAMP"];
-		$nonce = $_SERVER["HTTP_NONCE"];
+		if (!$APIKey = $db->APIKeys->where("key", $authorization->key)) {
+			returnError("API key does not exist");
+		}
+		if ($APIKey->isDisabled) {
+			returnError("API key is disabled", 403);
+		}
+		if (!hash_equals($HMAC, createHMAC($message, $authorization->key, $APIKey->secret))) {
+			$APIKey->isDisabled = 1;
+			$db->APIKeys->update($APIKey);
+			returnError("HMAC signature validation failed, disabling API key", 403);
+		}
 		
-		return hash_equals($HMAC, createHMAC($message, $user, $timestamp, $nonce, $secret));
+		if ($APIKey->user) {
+			if (!$user = $db->users->get($APIKey->user)) {
+				returnError("User for this request doesn't exist? This shouldn't happen", 500); //todo add errorlog stuff
+			}
+			if ($user->isDisabled) {
+				$APIKey->isDisabled = 1;
+				$db->APIKeys->update($APIKey);
+				returnError("User is disabled, disabling API key", 403);
+			}
+			$user->lastAccessedOn = date("Y-m-d H:i:s");
+			$db->users->update($user);
+		} elseif ($userRequired) {
+			returnError("User API key required for this request", 403);
+		}
+		
+		$APIKey->lastAccessedOn = date("Y-m-d H:i:s");
+		$db->APIKeys->update($APIKey);
+		
+		if ($APIKey->user) {
+			return $user;
+		}
+		
+		return false;
 	}
 	
-	function createHMAC($message, $user, $timestamp, $nonce, $secret) {
+	function createHMAC($message, $key, $secret) {
 		$url = $_SERVER["REQUEST_SCHEME"] . "://" . $_SERVER["HTTP_HOST"]. $_SERVER["REQUEST_URI"];
-		$secureMessage = $_SERVER["REQUEST_METHOD"] . $url . $message . $user . $timestamp . $nonce;
-		return hash_hmac("sha-512", $secureMessage, $secret);
+		$message = $_SERVER["REQUEST_METHOD"] . $url . $message . $key;
+		return hash_hmac("sha-512", $message, $secret);
 	}

@@ -2,7 +2,7 @@
 	class upload {
 		public $id;
 		public $file;
-		public $session;
+		public $user;
 		public $isPrivate;
 		public $createdOn;
 		public $lastAccessedOn;
