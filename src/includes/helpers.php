@@ -37,7 +37,7 @@
 		global $db;
 		$authorization = new authorization($_SERVER["HTTP_AUTHORIZATION"]);
 		$message = file_get_contents('php://input');
-		if (time() - strtotime($_SERVER["HTTP_TIMESTAMP"]) >= 600) {
+		if (abs(time() - strtotime($_SERVER["HTTP_TIMESTAMP"])) >= 600) {
 			returnError("Timestamp not in valid range");
 		}
 		if ($db->nonces->where("nonce", $_SERVER["HTTP_NONCE"])) {
