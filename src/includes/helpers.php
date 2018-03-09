@@ -1,4 +1,5 @@
 <?php
+	date_default_timezone_set('UTC');
 	require_once(dirname(__FILE__) . "/../lib/SkyCRUD/src/db.php");
 	require_once(dirname(__FILE__) . "/models.php");
 	
@@ -36,13 +37,19 @@
 		global $db;
 		$authorization = new authorization($_SERVER["HTTP_AUTHORIZATION"]);
 		$message = file_get_contents('php://input');
+		if (time() - strtotime($_SERVER["HTTP_TIMESTAMP"]) >= 600) {
+			returnError("Timestamp not in valid range");
+		}
+		if ($db->nonces->where("nonce", $_SERVER["HTTP_NONCE"])) {
+			returnError("Nonce has recently been used");
+		}
 		if (!$APIKey = $db->APIKeys->where("APIKey", $authorization->APIKey)) {
 			returnError("API key does not exist");
 		}
 		if ($APIKey->isDisabled) {
 			returnError("API key is disabled", 403);
 		}
-		if (!hash_equals($authorization->HMAC, createHMAC($message, $authorization->APIKey, $APIKey->secret))) {
+		if (!hash_equals($authorization->HMAC, createHMAC($message, $authorization->APIKey, $_SERVER["HTTP_NONCE"], $_SERVER["HTTP_TIMESTAMP"], $APIKey->secret))) {
 			$APIKey->isDisabled = 1;
 			$db->APIKeys->update($APIKey);
 			returnError("HMAC signature validation failed, disabling API key", 403);
@@ -66,6 +73,10 @@
 		$APIKey->lastAccessedOn = date("Y-m-d H:i:s");
 		$db->APIKeys->update($APIKey);
 		
+		$nonce = new nonce();
+		$nonce->nonce = $_SERVER["HTTP_NONCE"];
+		$db->nonces->add($nonce);
+		
 		if ($APIKey->user) {
 			return $user;
 		}
@@ -73,8 +84,8 @@
 		return false;
 	}
 	
-	function createHMAC($message, $key, $secret) {
+	function createHMAC($message, $key, $nonce, $timestamp, $secret) {
 		$url = $_SERVER["REQUEST_SCHEME"] . "://" . $_SERVER["HTTP_HOST"]. $_SERVER["REQUEST_URI"];
-		$message = $_SERVER["REQUEST_METHOD"] . $url . $message . $key;
+		$message = $_SERVER["REQUEST_METHOD"] . $url . $message . $key . $nonce . $timestamp;
 		return hash_hmac("sha512", $message, $secret);
 	}

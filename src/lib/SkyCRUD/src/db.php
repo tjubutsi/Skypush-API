@@ -4,7 +4,7 @@
 	class db {
 		public $connection;
 		public $APIKeys;
-		public $tokens;
+		public $nonces;
 		public $uploads;
 		public $users;
 		
@@ -16,6 +16,7 @@
 			$databasePassword = $config["password"];
 			$this->connection = new mysqli($databaseServer, $databaseUser, $databasePassword, $database);
 			$this->APIKeys = new entity("APIKeys", "APIKey", $this->connection);
+			$this->nonces = new entity("nonces", "nonce", $this->connection);
 			$this->uploads = new entity("uploads", "upload", $this->connection);
 			$this->users = new entity("users", "user", $this->connection);
 		}
