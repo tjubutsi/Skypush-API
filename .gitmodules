@@ -1,0 +1,3 @@
+[submodule "src/lib/SkyCRUD"]
+	path = src/lib/SkyCRUD
+	url = https://github.com/tjubutsi/SkyCRUD.git
