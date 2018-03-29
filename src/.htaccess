@@ -11,5 +11,5 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^(.*?)/?$ $1.php [L]
 
-#RewriteRule ^i/(.*)\.png$ - [R=404,L]
-#RewriteRule ^i/(.*)$ i.php?file=$1 [L]
+RewriteRule ^i/([a-z0-9]*)\.png$ - [R=404,L]
+RewriteRule ^i/([a-z0-9]*)$ i.php?file=$1 [L]
